@@ -1,0 +1,63 @@
+@page
+@model Firmeza.Web.Pages.Admin.Customers.CreateModel
+@{
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Nuevo Cliente";
+}
+
+<div class="max-w-2xl">
+    <a asp-page="Index" class="text-sm text-indigo-600 hover:text-indigo-800 mb-4 inline-block">← Volver a clientes</a>
+
+    <div class="card">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label asp-for="Input.FirstName" class="form-label"></label>
+                    <input asp-for="Input.FirstName" class="form-input" placeholder="Juan" />
+                    <span asp-validation-for="Input.FirstName" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.LastName" class="form-label"></label>
+                    <input asp-for="Input.LastName" class="form-input" placeholder="Pérez" />
+                    <span asp-validation-for="Input.LastName" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.DocumentNumber" class="form-label"></label>
+                    <input asp-for="Input.DocumentNumber" class="form-input" placeholder="12345678" />
+                    <span asp-validation-for="Input.DocumentNumber" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Phone" class="form-label"></label>
+                    <input asp-for="Input.Phone" class="form-input" placeholder="+57 300 123 4567" />
+                    <span asp-validation-for="Input.Phone" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label asp-for="Input.Email" class="form-label"></label>
+                    <input asp-for="Input.Email" type="email" class="form-input" placeholder="cliente@email.com" />
+                    <span asp-validation-for="Input.Email" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label asp-for="Input.Address" class="form-label"></label>
+                    <input asp-for="Input.Address" class="form-input" placeholder="Calle 123 #45-67, Ciudad" />
+                    <span asp-validation-for="Input.Address" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="btn-primary">Registrar cliente</button>
+                <a asp-page="Index" class="btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

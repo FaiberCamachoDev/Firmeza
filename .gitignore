@@ -1,0 +1,31 @@
+# ── .NET ──────────────────────────────────────────
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+
+# ── Node / Tailwind ───────────────────────────────
+**/node_modules/
+# Tailwind output es generado — reconstruir con: npm run build:css
+Firmeza/Firmeza.Web/wwwroot/css/app.css
+
+# ── Secretos y entorno ────────────────────────────
+**/appsettings.Development.json
+.env
+.env.local
+*.env
+
+# ── Claude Code (local only) ──────────────────────
+docsStudio/
+.agents/
+.backups/
+
+# ── IDEs ──────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+
+# ── Logs ──────────────────────────────────────────
+*.log
+logs/

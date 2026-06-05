@@ -1,0 +1,51 @@
+@page
+@model Firmeza.Web.Pages.Auth.LoginModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="min-h-screen flex items-center justify-center bg-gray-50">
+    <div class="w-full max-w-md">
+        <div class="card">
+            <div class="text-center mb-8">
+                <div class="w-12 h-12 bg-indigo-600 rounded-xl mx-auto flex items-center justify-center mb-4">
+                    <span class="text-white font-bold text-xl">F</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Firmeza</h2>
+                <p class="text-sm text-gray-500 mt-1">Panel Administrativo</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    @Model.ErrorMessage
+                </div>
+            }
+
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-600"></div>
+
+                <div class="mb-4">
+                    <label asp-for="Input.Email" class="form-label"></label>
+                    <input asp-for="Input.Email" class="form-input" placeholder="admin@firmeza.com" autocomplete="username" />
+                    <span asp-validation-for="Input.Email" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="mb-6">
+                    <label asp-for="Input.Password" class="form-label"></label>
+                    <input asp-for="Input.Password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+                    <span asp-validation-for="Input.Password" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <button type="submit" class="btn-primary w-full text-center">
+                    Iniciar sesión
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

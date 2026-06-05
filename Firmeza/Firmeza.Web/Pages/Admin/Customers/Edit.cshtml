@@ -1,0 +1,68 @@
+@page "{id:int}"
+@model Firmeza.Web.Pages.Admin.Customers.EditModel
+@{
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Editar Cliente";
+}
+
+<div class="max-w-2xl">
+    <a asp-page="Index" class="text-sm text-indigo-600 hover:text-indigo-800 mb-4 inline-block">← Volver a clientes</a>
+
+    <div class="card">
+        <form method="post">
+            <input type="hidden" asp-for="Input.Id" />
+            <div asp-validation-summary="ModelOnly" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label asp-for="Input.FirstName" class="form-label"></label>
+                    <input asp-for="Input.FirstName" class="form-input" />
+                    <span asp-validation-for="Input.FirstName" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.LastName" class="form-label"></label>
+                    <input asp-for="Input.LastName" class="form-input" />
+                    <span asp-validation-for="Input.LastName" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.DocumentNumber" class="form-label"></label>
+                    <input asp-for="Input.DocumentNumber" class="form-input" />
+                    <span asp-validation-for="Input.DocumentNumber" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Phone" class="form-label"></label>
+                    <input asp-for="Input.Phone" class="form-input" />
+                    <span asp-validation-for="Input.Phone" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label asp-for="Input.Email" class="form-label"></label>
+                    <input asp-for="Input.Email" type="email" class="form-input" />
+                    <span asp-validation-for="Input.Email" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label asp-for="Input.Address" class="form-label"></label>
+                    <input asp-for="Input.Address" class="form-input" />
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input asp-for="Input.IsActive" type="checkbox" class="w-4 h-4 accent-indigo-600" />
+                    <label asp-for="Input.IsActive" class="text-sm text-gray-700">Cliente activo</label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="btn-primary">Guardar cambios</button>
+                <a asp-page="Index" class="btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

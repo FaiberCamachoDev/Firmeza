@@ -1,0 +1,35 @@
+@page "{id:int}"
+@model Firmeza.Web.Pages.Admin.Products.DeleteModel
+@{
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Eliminar Producto";
+}
+
+<div class="max-w-lg">
+    <div class="card border border-red-200">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.963-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+            <h2 class="text-base font-semibold text-gray-900">¿Eliminar este producto?</h2>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4 mb-4 text-sm space-y-1">
+            <p><span class="text-gray-500">Nombre:</span> <span class="font-medium">@Model.ProductName</span></p>
+            <p><span class="text-gray-500">Categoría:</span> <span class="font-medium">@Model.ProductCategory</span></p>
+            <p><span class="text-gray-500">Stock:</span> <span class="font-medium">@Model.ProductStock</span></p>
+        </div>
+
+        <p class="text-sm text-red-600 mb-6">Esta acción no se puede deshacer.</p>
+
+        <form method="post">
+            <div class="flex gap-3">
+                <button type="submit" class="btn-danger">Sí, eliminar</button>
+                <a asp-page="Index" class="btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

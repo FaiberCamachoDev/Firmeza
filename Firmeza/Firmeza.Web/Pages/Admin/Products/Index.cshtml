@@ -1,0 +1,88 @@
+@page
+@model Firmeza.Web.Pages.Admin.Products.IndexModel
+@{
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Productos";
+}
+
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <p class="text-sm text-gray-500">@Model.Products.Count producto(s) encontrado(s)</p>
+    </div>
+    <a asp-page="Create" class="btn-primary">+ Nuevo producto</a>
+</div>
+
+<!-- Búsqueda y filtros -->
+<form method="get" class="card mb-6">
+    <div class="flex gap-4">
+        <input type="text" name="search" value="@Model.SearchTerm"
+               placeholder="Buscar por nombre o categoría..."
+               class="form-input flex-1" />
+        <button type="submit" class="btn-primary">Buscar</button>
+        @if (!string.IsNullOrEmpty(Model.SearchTerm))
+        {
+            <a asp-page="Index" class="btn-secondary">Limpiar</a>
+        }
+    </div>
+</form>
+
+@if (Model.ErrorMessage != null)
+{
+    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">@Model.ErrorMessage</div>
+}
+
+<div class="card p-0 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+                <th class="text-left px-4 py-3 font-medium text-gray-600">Nombre</th>
+                <th class="text-left px-4 py-3 font-medium text-gray-600">Categoría</th>
+                <th class="text-left px-4 py-3 font-medium text-gray-600">Unidad</th>
+                <th class="text-right px-4 py-3 font-medium text-gray-600">Precio</th>
+                <th class="text-right px-4 py-3 font-medium text-gray-600">Stock</th>
+                <th class="text-center px-4 py-3 font-medium text-gray-600">Estado</th>
+                <th class="px-4 py-3"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            @foreach (var p in Model.Products)
+            {
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 font-medium text-gray-900">@p.Name</td>
+                    <td class="px-4 py-3 text-gray-600">@p.Category</td>
+                    <td class="px-4 py-3 text-gray-600">@p.Unit</td>
+                    <td class="px-4 py-3 text-right text-gray-900">$@p.Price.ToString("N2")</td>
+                    <td class="px-4 py-3 text-right @(p.Stock <= 5 ? "text-red-600 font-medium" : "text-gray-900")">
+                        @p.Stock
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        @if (p.IsActive)
+                        {
+                            <span class="badge-active">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge-inactive">Inactivo</span>
+                        }
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2 justify-end">
+                            <a asp-page="Edit" asp-route-id="@p.Id"
+                               class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Editar</a>
+                            <a asp-page="Delete" asp-route-id="@p.Id"
+                               class="text-red-500 hover:text-red-700 text-xs font-medium">Eliminar</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Products.Any())
+            {
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                        No se encontraron productos.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
