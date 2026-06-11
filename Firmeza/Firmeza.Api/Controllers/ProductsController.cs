@@ -31,8 +31,12 @@ public class ProductsController : ControllerBase
         var query = _db.Products.AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
+        {
+            var term = search.ToLower();
             query = query.Where(p =>
-                p.Name.Contains(search) || p.Description.Contains(search));
+                p.Name.ToLower().Contains(term) ||
+                p.Description.ToLower().Contains(term));
+        }
 
         if (!string.IsNullOrEmpty(category))
             query = query.Where(p => p.Category == category);

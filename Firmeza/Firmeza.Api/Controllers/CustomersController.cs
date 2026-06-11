@@ -32,10 +32,13 @@ public class CustomersController : ControllerBase
         var query = _db.Customers.AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
+        {
+            var term = search.ToLower();
             query = query.Where(c =>
-                c.FirstName.Contains(search) ||
-                c.LastName.Contains(search)  ||
-                c.DocumentNumber.Contains(search));
+                c.FirstName.ToLower().Contains(term) ||
+                c.LastName.ToLower().Contains(term)  ||
+                c.DocumentNumber.ToLower().Contains(term));
+        }
 
         if (active.HasValue)
             query = query.Where(c => c.IsActive == active.Value);
