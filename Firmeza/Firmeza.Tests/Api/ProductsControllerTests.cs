@@ -6,6 +6,7 @@ using Firmeza.Web.Data;
 using Firmeza.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Firmeza.Tests.Api;
 
@@ -22,8 +23,11 @@ public class ProductsControllerTests : IDisposable
             .Options;
 
         _db = new ApplicationDbContext(options);
-        _mapper = new MapperConfiguration(c => c.AddProfile<MappingProfile>())
-            .CreateMapper();
+        _mapper = new ServiceCollection()
+            .AddLogging()
+            .AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>())
+            .BuildServiceProvider()
+            .GetRequiredService<IMapper>();
 
         _controller = new ProductsController(_db, _mapper);
     }
@@ -165,5 +169,47 @@ public class ProductsControllerTests : IDisposable
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var cats = Assert.IsAssignableFrom<IEnumerable<string>>(ok.Value);
         Assert.Equal(2, cats.Count());
+    }
+
+    [Fact]
+    public async Task Update_NotFound_Returns404()
+    {
+        var result = await _controller.Update(9999, new ProductUpdateDto { Price = 10m });
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Delete_ProductInUse_ReturnsConflict()
+    {
+        var product = new Product { Name = "En uso", Price = 5m, IsActive = true };
+        _db.Products.Add(product);
+        await _db.SaveChangesAsync();
+
+        _db.SaleDetails.Add(new SaleDetail
+        {
+            ProductId = product.Id,
+            Quantity  = 1,
+            UnitPrice = product.Price,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.Delete(product.Id);
+        Assert.IsType<ConflictObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetAll_WithCategoryFilter_ReturnsOnlyMatchingCategory()
+    {
+        _db.Products.AddRange(
+            new Product { Name = "Cemento A", Price = 10m, Category = "Cementos", IsActive = true },
+            new Product { Name = "Varilla B", Price = 20m, Category = "Acero",    IsActive = true }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetAll(null, "Cementos", null);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var list = Assert.IsAssignableFrom<IEnumerable<ProductDto>>(ok.Value);
+        Assert.All(list, p => Assert.Equal("Cementos", p.Category));
     }
 }
