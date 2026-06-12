@@ -1,25 +1,42 @@
-# Swagger en Firmeza.Api (Week 3 — Task 7)
+# Swagger en Firmeza.Api (Week 3)
 
 ## ¿Qué es Swagger?
 
-Swagger (ahora parte del estándar **OpenAPI**) es un sistema que lee tu código de controladores y genera automáticamente una **especificación JSON** que describe todos los endpoints de tu API: rutas, métodos HTTP, parámetros, cuerpos de request, respuestas y esquemas de datos.
+Swagger (parte del estándar **OpenAPI**) es un sistema que lee el código de los controladores y genera automáticamente una **especificación JSON** que describe todos los endpoints de la API: rutas, métodos HTTP, parámetros, cuerpos de request, respuestas y esquemas de datos.
 
-Sobre esa especificación JSON monta una **interfaz web interactiva** (Swagger UI) desde la que puedes ver, entender y probar la API directamente en el navegador, sin Postman ni curl.
+Sobre esa especificación JSON monta una **interfaz web interactiva** (Swagger UI) desde la que se puede ver, entender y probar la API directamente en el navegador, sin necesidad de Postman ni curl.
 
-## Cómo funciona en este proyecto
+---
 
-### Paquete
+## Archivos involucrados
+
+```
+Firmeza.Api/
+├── Program.cs                  ← registra SwaggerGen y SwaggerUI; configura esquema JWT
+├── appsettings.json            ← no requiere configuración adicional para Swagger
+└── Controllers/
+    ├── AuthController.cs       ← comentarios XML (<summary>) usados por Swagger
+    ├── ProductsController.cs
+    ├── CustomersController.cs
+    └── SalesController.cs
+```
+
+---
+
+## Paquete utilizado
 
 ```xml
 <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
 ```
 
-`Swashbuckle` es la librería .NET que integra Swagger con ASP.NET Core. Hace dos cosas:
+`Swashbuckle` integra Swagger con ASP.NET Core y hace dos cosas:
 
-1. **SwaggerGen** — inspecciona todos los `[ApiController]` en tiempo de arranque y genera el archivo `swagger.json` con la especificación OpenAPI.
-2. **SwaggerUI** — sirve la interfaz web HTML/JS que lee ese JSON y la muestra como documentación navegable.
+1. **SwaggerGen** — inspecciona todos los `[ApiController]` al arrancar y genera `swagger.json` con la especificación OpenAPI.
+2. **SwaggerUI** — sirve la interfaz web HTML/JS que lee ese JSON y la presenta como documentación navegable.
 
-### Registro en `Program.cs`
+---
+
+## Registro en `Program.cs`
 
 ```csharp
 // 1. Genera la especificación OpenAPI
@@ -46,52 +63,54 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Firmeza API v1");
-    c.RoutePrefix = string.Empty;  // La UI está en "/" (raíz)
+    c.RoutePrefix = string.Empty;  // La UI está en "/" (raíz del servidor)
 });
 ```
 
-## ¿Dónde lo veo?
+---
 
-Arranca el proyecto API:
+## ¿Dónde acceder?
+
+Levanta el proyecto API:
 
 ```bash
 cd Firmeza/Firmeza.Api
 dotnet run
 ```
 
-Y abre en el navegador:
-
 | URL | Qué hay |
 |---|---|
 | `http://localhost:5109/` | Swagger UI — interfaz interactiva completa |
 | `http://localhost:5109/swagger/v1/swagger.json` | Especificación OpenAPI en JSON puro |
-| `https://localhost:7245/` | Idem en HTTPS |
+| `https://localhost:7245/` | Ídem en HTTPS |
 
-> Los puertos vienen de `Properties/launchSettings.json`. Si el puerto ya está en uso, .NET elige otro y lo muestra en la terminal.
+Los puertos vienen de `Firmeza.Api/Properties/launchSettings.json`. Si el puerto ya está en uso, .NET elige otro y lo muestra en la terminal.
+
+---
 
 ## Proceso completo: de código a consumo
 
 ```
-[Código C#]
-  ↓  SwaggerGen lee atributos y tipos
-[swagger.json] — especificación OpenAPI
+[Código C# con controladores y DTOs]
+  ↓  SwaggerGen lee atributos y tipos al arrancar
+[swagger.json] — especificación OpenAPI generada automáticamente
   ↓  SwaggerUI la renderiza
-[Interfaz web] — documentación + testing
-  ↓  Cliente (Blazor, Postman, fetch) la consume
-[HTTP requests] → API → DB → JSON response
+[Interfaz web] — documentación interactiva + testing
+  ↓  Clientes (Blazor, Postman, fetch) la consumen
+[Requests HTTP] → API → DB → Respuesta JSON
 ```
 
-### 1. El código genera la especificación
+### Qué lee SwaggerGen del código
 
 Cada vez que arranca la API, Swashbuckle escanea:
 
 - Las rutas `[HttpGet]`, `[HttpPost]`, `[HttpPut]`, `[HttpDelete]`
 - Los parámetros de entrada (query, body, route)
 - Los tipos de retorno (`ProductDto`, `TokenResponseDto`, etc.)
-- Los atributos `[Authorize]` para marcar qué endpoints requieren token
-- Los `/// <summary>` XML para mostrar descripciones en la UI
+- Los atributos `[Authorize]` para marcar endpoints que requieren token
+- Los comentarios XML `/// <summary>` para mostrar descripciones en la UI
 
-Ejemplo de lo que lee en `ProductsController`:
+Ejemplo de lo que lee en `ProductsController.cs`:
 ```csharp
 /// <summary>Lista productos con filtros opcionales.</summary>
 [HttpGet]
@@ -102,51 +121,59 @@ public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll(
 ```
 → Swagger genera la entrada: `GET /api/products` con tres query params opcionales.
 
-### 2. La UI lo muestra interactivo
+---
 
-En `http://localhost:5109/` ves una página con:
-- Todos los endpoints agrupados por controlador
-- Botón **"Try it out"** para ejecutar requests reales desde el navegador
-- Formularios con los parámetros detectados
-- Respuesta HTTP completa (status, headers, body)
+## Autenticación JWT en Swagger UI
 
-### 3. Autenticación JWT en Swagger UI
-
-La API tiene endpoints protegidos con `[Authorize]`. Para probarlos desde Swagger:
+Para probar endpoints protegidos con `[Authorize]` desde la interfaz:
 
 1. Ejecuta `POST /api/auth/login` con las credenciales del admin:
    ```json
    { "email": "admin@firmeza.com", "password": "Admin@123!" }
    ```
-2. Copia el `token` de la respuesta.
-3. Haz clic en el botón **"Authorize"** (candado 🔓) en la esquina superior derecha.
+2. Copia el campo `token` de la respuesta.
+3. Haz clic en el botón **"Authorize"** (candado) en la esquina superior derecha.
 4. Pega el token en el campo `Value` y haz clic en **Authorize**.
 5. Swagger añade automáticamente el header `Authorization: Bearer <token>` a todas las peticiones siguientes.
 
-### 4. Consumo desde otros clientes
+---
 
-El `swagger.json` también sirve para generar clientes automáticos en otros lenguajes. Por ejemplo, cuando se integre Blazor WebAssembly, se puede apuntar un generador de código al JSON para producir un cliente C# tipado sin escribir código manualmente.
-
-```bash
-# Ejemplo con la herramienta oficial de Microsoft
-dotnet tool install -g Microsoft.dotnet-openapi
-dotnet openapi add url http://localhost:5109/swagger/v1/swagger.json
-```
-
-## Resumen visual
+## Resumen de rutas disponibles en la UI
 
 ```
-dotnet run (Firmeza.Api)
-      │
-      ▼
 http://localhost:5109/
       │
-      ├── /                    → Swagger UI  (navegador)
-      ├── /swagger/v1/swagger.json → OpenAPI JSON
-      ├── /api/auth/login      → POST  (sin auth)
-      ├── /api/products        → GET   (sin auth)
-      ├── /api/products/{id}   → GET   (sin auth)
-      ├── /api/products        → POST  (requiere Admin JWT)
-      ├── /api/customers       → GET   (requiere Admin JWT)
-      └── /api/sales           → POST  (requiere Admin o Cliente JWT)
+      ├── /                              → Swagger UI (navegador)
+      ├── /swagger/v1/swagger.json       → OpenAPI JSON
+      │
+      ├── POST  /api/auth/login          → sin auth
+      ├── POST  /api/auth/register       → sin auth
+      │
+      ├── GET   /api/products            → sin auth
+      ├── GET   /api/products/{id}       → sin auth
+      ├── GET   /api/products/categories → sin auth
+      ├── POST  /api/products            → requiere JWT Admin
+      ├── PUT   /api/products/{id}       → requiere JWT Admin
+      ├── DELETE /api/products/{id}      → requiere JWT Admin
+      │
+      ├── GET   /api/customers           → requiere JWT Admin
+      ├── GET   /api/customers/{id}      → requiere JWT Admin
+      ├── POST  /api/customers           → requiere JWT Admin
+      ├── PUT   /api/customers/{id}      → requiere JWT Admin
+      ├── DELETE /api/customers/{id}     → requiere JWT Admin
+      │
+      ├── GET   /api/sales               → requiere JWT Admin
+      ├── GET   /api/sales/{id}          → requiere JWT Admin
+      └── POST  /api/sales               → requiere JWT Admin o Cliente
+```
+
+---
+
+## Consumo desde otros clientes
+
+El `swagger.json` puede usarse para generar clientes automáticos en otros lenguajes. Cuando se integre Blazor WebAssembly, se puede apuntar un generador de código al JSON para producir un cliente C# tipado:
+
+```bash
+dotnet tool install -g Microsoft.dotnet-openapi
+dotnet openapi add url http://localhost:5109/swagger/v1/swagger.json
 ```

@@ -17,7 +17,7 @@
 | Base de Datos | PostgreSQL | 16.x |
 | ORM | Entity Framework Core + Npgsql | 9.x |
 | Autenticación | Identity + JWT Bearer | 9.x |
-| Mapeo | AutoMapper | 14.x |
+| Mapeo | AutoMapper | 15.x |
 | Documentación API | Swashbuckle (Swagger) | 7.x |
 | Reportes | QuestPDF + EPPlus | instalado |
 | Email | MailKit (Gmail SMTP) | 4.x |
@@ -81,7 +81,7 @@ Module6-w1/
 | 5+6 | Controladores CRUD con filtros y autorización por rol | ✅ |
 | 7 | Swagger con esquema Bearer JWT | ✅ |
 | 8 | EmailService Gmail SMTP (IEmailService, MailKit) | ✅ |
-| 9 | 11 nuevos tests unitarios (total: 23 passing) | ✅ |
+| 9 | Pruebas unitarias (total: 48 passing) | ✅ |
 
 ## Roles de Usuario
 

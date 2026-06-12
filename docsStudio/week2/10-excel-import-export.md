@@ -1,97 +1,148 @@
-# Excel Import & Export — Week 2
+# Importación y Exportación Excel — Week 2
 
-## Overview
+## Descripción general
 
-The system supports two Excel-related workflows:
+El sistema soporta dos flujos relacionados con Excel:
 
-1. **Bulk import** — upload a `.xlsx` file with denormalized/mixed data; the system normalizes and upserts into the correct tables.
-2. **Export** — download the current dataset (products, customers, or sales) as a formatted `.xlsx` file.
+1. **Importación masiva** — se sube un archivo `.xlsx` con datos desnormalizados/mezclados; el sistema los normaliza e inserta o actualiza en las tablas correctas.
+2. **Exportación** — se descarga el conjunto de datos actual (productos, clientes o ventas) como un archivo `.xlsx` formateado.
 
-Both are powered by **EPPlus 7** (NonCommercial license).
+Ambos flujos están implementados con **EPPlus 7** (licencia NonCommercial).
 
 ---
 
-## Bulk Import (`ExcelImportService`)
+## Archivos involucrados
 
-File: `Services/ExcelImportService.cs`
+```
+Firmeza.Web/
+├── Services/
+│   ├── ExcelImportService.cs       ← lógica de importación masiva
+│   └── ExcelExportService.cs       ← lógica de exportación por entidad
+├── Pages/Admin/
+│   └── Import/
+│       ├── Index.cshtml            ← formulario de carga + tabla de referencia de columnas
+│       └── Index.cshtml.cs         ← PageModel: maneja GET (formulario) y POST (procesa archivo)
+└── Program.cs                      ← registra ExcelImportService y ExcelExportService como Scoped
+```
 
-### Detection strategy
+---
 
-Each worksheet is inspected independently. Detection is based on which headers are present (case-insensitive, accents stripped):
+## Importación masiva (`ExcelImportService`)
 
-| Condition | Detected as |
+**Archivo:** `Firmeza.Web/Services/ExcelImportService.cs`
+
+### Estrategia de detección
+
+Cada hoja del archivo se inspecciona de forma independiente. La detección se basa en qué encabezados están presentes (sin distinguir mayúsculas/minúsculas, sin tildes):
+
+| Condición | Detectado como |
 |---|---|
-| Has `Nombre`/`Producto` **and** `Precio` | Products sheet |
-| Has `Cliente`/`Nombre` **and** `Documento`/`Cedula` | Customers sheet |
-| Has `Documento_Cliente` **and** `Producto_Venta` **and** `Cantidad` | Sales sheet |
+| Tiene `Nombre`/`Producto` **y** `Precio` | Hoja de Productos |
+| Tiene `Cliente`/`Nombre` **y** `Documento`/`Cedula` | Hoja de Clientes |
+| Tiene `Documento_Cliente` **y** `Producto_Venta` **y** `Cantidad` | Hoja de Ventas |
 
-A single file may contain multiple sheets of different types — all are processed.
+Un mismo archivo puede tener múltiples hojas de distintos tipos — todas se procesan.
 
-### Required columns per type
+### Columnas requeridas por tipo
 
-**Products**
-| Column | Required | Aliases |
+**Productos**
+| Columna | Requerida | Alias aceptados |
 |---|---|---|
-| Nombre | Yes | Producto, Name |
-| Precio | Yes | Price |
+| Nombre | Sí | Producto, Name |
+| Precio | Sí | Price |
 | Descripcion | No | Description |
 | Categoria | No | Category |
 | Unidad | No | Unit |
 | Stock | No | Inventario, Cantidad |
 
-**Customers**
-| Column | Required | Aliases |
+**Clientes**
+| Columna | Requerida | Alias aceptados |
 |---|---|---|
-| Cliente / Nombre | Yes | First_Name, Nombres |
-| Documento | Yes | Cedula, RFC, Document_Number |
+| Cliente / Nombre | Sí | First_Name, Nombres |
+| Documento | Sí | Cedula, RFC, Document_Number |
 | Apellido | No | Last_Name, Apellidos |
 | Telefono | No | Phone |
 | Email | No | Correo |
 | Direccion | No | Address |
 
-**Sales**
-| Column | Required | Notes |
+**Ventas**
+| Columna | Requerida | Notas |
 |---|---|---|
-| Documento_Cliente | Yes | Must match an existing Customer |
-| Producto_Venta | Yes | Must match an existing Product |
-| Cantidad | Yes | Integer > 0 |
-| Precio_Unitario | No | Defaults to current product price |
+| Documento_Cliente | Sí | Debe coincidir con un Cliente existente |
+| Producto_Venta | Sí | Debe coincidir con un Producto existente |
+| Cantidad | Sí | Entero > 0 |
+| Precio_Unitario | No | Por defecto usa el precio actual del producto |
 | Notas | No | |
 
-### Upsert logic
+### Lógica de upsert
 
-- **Products**: matched by `Name`. If found → update Price, Stock, Category, Unit, Description. If not → insert.
-- **Customers**: matched by `DocumentNumber`. If found → update fields. If not → insert.
-- **Sales**: always inserted (one row = one sale with one detail line). Customer and Product must pre-exist.
+- **Productos**: se busca por `Name`. Si existe → actualiza Precio, Stock, Categoría, Unidad, Descripción. Si no → inserta.
+- **Clientes**: se busca por `DocumentNumber`. Si existe → actualiza campos. Si no → inserta.
+- **Ventas**: siempre se insertan (una fila = una venta con un ítem). El Cliente y el Producto deben existir previamente.
 
-### Error log
+### Registro de errores
 
-`ImportResult` accumulates all row-level errors (invalid price, missing customer, etc.). The UI shows the count and each message after import.
+`ImportResult` acumula todos los errores a nivel de fila (precio inválido, cliente inexistente, etc.). La interfaz muestra el conteo y cada mensaje después de la importación.
 
 ---
 
-## Export (`ExcelExportService`)
+## Exportación (`ExcelExportService`)
 
-File: `Services/ExcelExportService.cs`
+**Archivo:** `Firmeza.Web/Services/ExcelExportService.cs`
 
-Three methods, each returns `byte[]`:
+Tres métodos, cada uno retorna `byte[]`:
 
-| Method | Sheet name | Endpoint |
+| Método | Nombre de hoja | Endpoint |
 |---|---|---|
 | `ExportProductsAsync()` | Productos | `/Admin/Products/Index?handler=ExportExcel` |
 | `ExportCustomersAsync()` | Clientes | `/Admin/Customers/Index?handler=ExportExcel` |
 | `ExportSalesAsync()` | Ventas | `/Admin/Sales/Index?handler=ExportExcel` |
 
-Headers use indigo background (`#4F46E5`) with white bold text. Numeric columns are formatted `#,##0.00`. Columns auto-fit.
+Los encabezados usan fondo índigo (`#4F46E5`) con texto blanco en negrita. Las columnas numéricas tienen formato `#,##0.00`. El ancho de columnas se ajusta automáticamente.
 
-Sales export denormalizes: one row per `SaleDetail` (each product line), repeating the sale header columns.
+La exportación de ventas desnormaliza los datos: una fila por `SaleDetail` (cada línea de producto), repitiendo las columnas de cabecera de la venta.
 
 ---
 
-## Pages
+## Páginas
 
 ### `/Admin/Import`
-- `GET` — shows the upload form and column reference table.
-- `POST` — receives the file, runs `ExcelImportService.ImportAsync`, renders the result summary.
 
-The reference table on the page lists the accepted column names so users can prepare their files correctly.
+**Archivos:** `Firmeza.Web/Pages/Admin/Import/Index.cshtml` + `Index.cshtml.cs`
+
+- `GET` — muestra el formulario de carga y la tabla de referencia de columnas aceptadas.
+- `POST` — recibe el archivo, ejecuta `ExcelImportService.ImportAsync`, muestra el resumen del resultado.
+
+La tabla de referencia en la página lista los nombres de columna aceptados para que los usuarios puedan preparar sus archivos correctamente antes de importar.
+
+---
+
+## Cómo funciona el flujo completo
+
+```
+Usuario sube archivo .xlsx
+         ↓
+Index.cshtml.cs → OnPostAsync()
+         ↓
+ExcelImportService.ImportAsync(stream)
+         ↓
+Para cada hoja:
+  1. Lee encabezados → detecta tipo (Productos / Clientes / Ventas)
+  2. Itera filas → valida campos requeridos
+  3. Busca entidad existente en DB (por Name o DocumentNumber)
+  4. Upsert: actualiza si existe, inserta si no
+  5. Acumula errores en ImportResult
+         ↓
+Devuelve ImportResult con: filas procesadas, insertadas, actualizadas, errores
+         ↓
+La página muestra el resumen al usuario
+```
+
+---
+
+## Registro de servicios en `Program.cs`
+
+```csharp
+builder.Services.AddScoped<ExcelImportService>();
+builder.Services.AddScoped<ExcelExportService>();
+```
