@@ -39,8 +39,9 @@ public class SalesController : ControllerBase
         return Ok(_mapper.Map<IEnumerable<SaleDto>>(sales));
     }
 
-    /// <summary>Obtiene una venta por ID. [Admin o propietario]</summary>
+    /// <summary>Obtiene una venta por ID. [Admin]</summary>
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SaleDto>> GetById(int id)
     {
         var sale = await _db.Sales
@@ -69,9 +70,19 @@ public class SalesController : ControllerBase
         if (products.Count != productIds.Count)
             return BadRequest(new { message = "Uno o más productos no existen o están inactivos." });
 
+        var insufficientStock = dto.Items
+            .Select(item => new { item, product = products.First(p => p.Id == item.ProductId) })
+            .Where(x => x.product.Stock < x.item.Quantity)
+            .Select(x => x.product.Name)
+            .ToList();
+
+        if (insufficientStock.Count > 0)
+            return BadRequest(new { message = $"Stock insuficiente para: {string.Join(", ", insufficientStock)}." });
+
         var details = dto.Items.Select(item =>
         {
             var product = products.First(p => p.Id == item.ProductId);
+            product.Stock -= item.Quantity;
             return new SaleDetail
             {
                 ProductId = item.ProductId,
