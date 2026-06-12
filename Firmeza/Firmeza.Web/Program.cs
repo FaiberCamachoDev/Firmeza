@@ -1,5 +1,6 @@
 using Firmeza.Web.Data;
 using Firmeza.Web.Models;
+using Firmeza.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
@@ -28,6 +29,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Auth/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 });
+
+builder.Services.AddScoped<ExcelImportService>();
+builder.Services.AddScoped<ExcelExportService>();
+builder.Services.AddScoped<PdfReceiptService>();
 
 builder.Services.AddRazorPages(options =>
 {

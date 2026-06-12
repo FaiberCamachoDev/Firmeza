@@ -1,0 +1,145 @@
+@page
+@model Firmeza.Web.Pages.Admin.Sales.CreateModel
+@{
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Nueva Venta";
+}
+
+<div class="max-w-2xl">
+    <a asp-page="Index" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Volver a ventas</a>
+
+    <div class="card">
+        <form method="post" id="saleForm">
+            @Html.AntiForgeryToken()
+
+            @if (!ModelState.IsValid)
+            {
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    @foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <p>@error.ErrorMessage</p>
+                    }
+                </div>
+            }
+
+            <!-- Cliente -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cliente <span class="text-red-500">*</span></label>
+                <select asp-for="Input.CustomerId" asp-items="Model.Customers"
+                        class="form-input w-full">
+                    <option value="">— Selecciona un cliente —</option>
+                </select>
+                <span asp-validation-for="Input.CustomerId" class="text-xs text-red-600"></span>
+            </div>
+
+            <!-- Notas -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                <textarea asp-for="Input.Notes" rows="2" class="form-input w-full"
+                          placeholder="Observaciones opcionales..."></textarea>
+            </div>
+
+            <!-- Productos -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-sm font-medium text-gray-700">Productos <span class="text-red-500">*</span></label>
+                    <button type="button" id="addItem"
+                            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">+ Agregar producto</button>
+                </div>
+
+                <div id="itemsContainer" class="space-y-3">
+                    <!-- rows added by JS -->
+                </div>
+                <p id="noItemsMsg" class="text-xs text-gray-400 mt-1">No se ha agregado ningún producto.</p>
+            </div>
+
+            <!-- Total preview -->
+            <div class="flex justify-end mb-6">
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Subtotal estimado</p>
+                    <p class="text-lg font-bold text-gray-900" id="totalPreview">$0.00</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="btn-primary">Registrar venta y generar recibo PDF</button>
+                <a asp-page="Index" class="btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Products?.Cast<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>()
+            .Select(x => new { id = x.Value, name = x.Text })
+            .ToList() ?? []
+    ));
+
+    let itemCount = 0;
+    const container = document.getElementById('itemsContainer');
+    const noMsg = document.getElementById('noItemsMsg');
+
+    function buildOptions(selectedId) {
+        return products.map(p =>
+            `<option value="${p.id}" ${p.id == selectedId ? 'selected' : ''}>${p.name}</option>`
+        ).join('');
+    }
+
+    function addRow(productId = '', qty = 1) {
+        noMsg.classList.add('hidden');
+        const idx = itemCount++;
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 items-center';
+        div.dataset.idx = idx;
+        div.innerHTML = `
+            <select name="Input.Items[${idx}].ProductId"
+                    class="form-input flex-1" onchange="updateTotal()">
+                <option value="">— Producto —</option>
+                ${buildOptions(productId)}
+            </select>
+            <input type="number" name="Input.Items[${idx}].Quantity"
+                   value="${qty}" min="1"
+                   class="form-input w-24" placeholder="Cant." onchange="updateTotal()" oninput="updateTotal()" />
+            <button type="button" class="text-red-500 hover:text-red-700 text-sm px-1" onclick="removeRow(this)">✕</button>
+        `;
+        container.appendChild(div);
+        updateTotal();
+    }
+
+    window.removeRow = function(btn) {
+        btn.closest('[data-idx]').remove();
+        if (!container.children.length) noMsg.classList.remove('hidden');
+        reindex();
+        updateTotal();
+    };
+
+    function reindex() {
+        Array.from(container.children).forEach((row, i) => {
+            row.querySelector('select').name = `Input.Items[${i}].ProductId`;
+            row.querySelector('input[type=number]').name = `Input.Items[${i}].Quantity`;
+        });
+        itemCount = container.children.length;
+    }
+
+    window.updateTotal = function() {
+        let total = 0;
+        Array.from(container.children).forEach(row => {
+            const sel = row.querySelector('select');
+            const qty = parseInt(row.querySelector('input[type=number]').value) || 0;
+            const product = products.find(p => p.id == sel.value);
+            if (product) {
+                const price = parseFloat(product.name.match(/\$([\d,.]+)/)?.[1]?.replace(',','') || 0);
+                total += price * qty;
+            }
+        });
+        document.getElementById('totalPreview').textContent = '$' + total.toFixed(2);
+    };
+
+    document.getElementById('addItem').addEventListener('click', () => addRow());
+    addRow(); // start with one row
+})();
+</script>
+}

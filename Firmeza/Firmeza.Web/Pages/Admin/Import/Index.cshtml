@@ -1,0 +1,117 @@
+@page
+@model Firmeza.Web.Pages.Admin.Import.IndexModel
+@{
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Importación Masiva";
+}
+
+<div class="max-w-2xl">
+
+    <!-- Upload form -->
+    <div class="card mb-6">
+        <h2 class="text-base font-semibold text-gray-800 mb-1">Cargar archivo Excel</h2>
+        <p class="text-sm text-gray-500 mb-4">
+            El archivo puede contener hojas con productos, clientes o ventas mezclados.
+            El sistema detectará el tipo de datos según los encabezados de cada hoja.
+        </p>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            @Html.AntiForgeryToken()
+
+            @if (!ModelState.IsValid)
+            {
+                <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    @foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <p>@error.ErrorMessage</p>
+                    }
+                </div>
+            }
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Archivo .xlsx</label>
+                <input type="file" name="file" accept=".xlsx"
+                       class="block w-full text-sm text-gray-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-lg file:border-0
+                              file:text-sm file:font-medium
+                              file:bg-indigo-50 file:text-indigo-700
+                              hover:file:bg-indigo-100 cursor-pointer" />
+            </div>
+
+            <button type="submit" class="btn-primary">Importar datos</button>
+        </form>
+    </div>
+
+    <!-- Results -->
+    @if (Model.Result != null)
+    {
+        var r = Model.Result;
+
+        <div class="card mb-6">
+            <h3 class="text-base font-semibold text-gray-800 mb-4">Resultado de la importación</h3>
+
+            <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="text-center p-3 bg-indigo-50 rounded-lg">
+                    <p class="text-2xl font-bold text-indigo-700">@(r.ProductsInserted + r.ProductsUpdated)</p>
+                    <p class="text-xs text-gray-500 mt-1">Productos</p>
+                    <p class="text-xs text-gray-400">@r.ProductsInserted nuevos · @r.ProductsUpdated actualizados</p>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded-lg">
+                    <p class="text-2xl font-bold text-green-700">@(r.CustomersInserted + r.CustomersUpdated)</p>
+                    <p class="text-xs text-gray-500 mt-1">Clientes</p>
+                    <p class="text-xs text-gray-400">@r.CustomersInserted nuevos · @r.CustomersUpdated actualizados</p>
+                </div>
+                <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                    <p class="text-2xl font-bold text-yellow-700">@r.SalesInserted</p>
+                    <p class="text-xs text-gray-500 mt-1">Ventas creadas</p>
+                </div>
+            </div>
+
+            @if (r.HasErrors)
+            {
+                <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-sm font-medium text-red-700 mb-2">Errores e inconsistencias (@r.Errors.Count):</p>
+                    <ul class="space-y-1">
+                        @foreach (var error in r.Errors)
+                        {
+                            <li class="text-xs text-red-600">• @error</li>
+                        }
+                    </ul>
+                </div>
+            }
+            else
+            {
+                <div class="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                    Importación completada sin errores.
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Column reference -->
+    <div class="card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Referencia de columnas esperadas</h3>
+        <div class="grid grid-cols-1 gap-4 text-xs">
+
+            <div>
+                <p class="font-medium text-indigo-700 mb-1">Hoja de Productos</p>
+                <p class="text-gray-500">Requeridas: <span class="font-mono">Nombre</span>, <span class="font-mono">Precio</span></p>
+                <p class="text-gray-400">Opcionales: Descripcion, Categoria, Unidad, Stock</p>
+            </div>
+
+            <div>
+                <p class="font-medium text-green-700 mb-1">Hoja de Clientes</p>
+                <p class="text-gray-500">Requeridas: <span class="font-mono">Cliente</span> (o Nombre), <span class="font-mono">Documento</span></p>
+                <p class="text-gray-400">Opcionales: Apellido, Telefono, Email, Direccion</p>
+            </div>
+
+            <div>
+                <p class="font-medium text-yellow-700 mb-1">Hoja de Ventas</p>
+                <p class="text-gray-500">Requeridas: <span class="font-mono">Documento_Cliente</span>, <span class="font-mono">Producto_Venta</span>, <span class="font-mono">Cantidad</span></p>
+                <p class="text-gray-400">Opcionales: Precio_Unitario, Notas</p>
+                <p class="text-gray-400 mt-1">El cliente y producto deben existir previamente en el sistema.</p>
+            </div>
+        </div>
+    </div>
+</div>
