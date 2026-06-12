@@ -55,7 +55,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 // ── AutoMapper ────────────────────────────────────────────────────────────────
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
 // ── Servicios propios ─────────────────────────────────────────────────────────
 builder.Services.AddScoped<JwtService>();
