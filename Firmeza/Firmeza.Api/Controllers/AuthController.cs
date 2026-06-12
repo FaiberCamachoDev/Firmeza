@@ -1,8 +1,10 @@
 using Firmeza.Api.DTOs.Auth;
 using Firmeza.Api.Services;
+using Firmeza.Web.Data;
 using Firmeza.Web.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Firmeza.Api.Controllers;
 
@@ -13,15 +15,18 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly JwtService _jwt;
     private readonly IEmailService _email;
+    private readonly ApplicationDbContext _db;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         JwtService jwt,
-        IEmailService email)
+        IEmailService email,
+        ApplicationDbContext db)
     {
         _userManager = userManager;
         _jwt = jwt;
         _email = email;
+        _db = db;
     }
 
     /// <summary>Obtiene un token JWT para el usuario autenticado.</summary>
@@ -35,17 +40,21 @@ public class AuthController : ControllerBase
         var roles = await _userManager.GetRolesAsync(user);
         var (token, expiresAt) = _jwt.GenerateToken(user, roles);
 
+        var customer = await _db.Customers
+            .FirstOrDefaultAsync(c => c.Email == dto.Email && c.IsActive);
+
         return Ok(new TokenResponseDto
         {
-            Token    = token,
-            ExpiresAt = expiresAt,
-            Email    = user.Email!,
-            FullName = $"{user.FirstName} {user.LastName}",
-            Roles    = roles,
+            Token      = token,
+            ExpiresAt  = expiresAt,
+            Email      = user.Email!,
+            FullName   = $"{user.FirstName} {user.LastName}",
+            Roles      = roles,
+            CustomerId = customer?.Id,
         });
     }
 
-    /// <summary>Registra un nuevo usuario con rol Cliente.</summary>
+    /// <summary>Registra un nuevo usuario con rol Cliente y crea su registro de cliente.</summary>
     [HttpPost("register")]
     public async Task<ActionResult<TokenResponseDto>> Register([FromBody] RegisterDto dto)
     {
@@ -69,16 +78,42 @@ public class AuthController : ControllerBase
 
         await _userManager.AddToRoleAsync(user, "Cliente");
 
+        // Crear registro de cliente vinculado al usuario para poder registrar ventas
+        var existingCustomer = await _db.Customers
+            .FirstOrDefaultAsync(c => c.DocumentNumber == dto.DocumentNumber);
+
+        Customer customer;
+        if (existingCustomer is null)
+        {
+            customer = new Customer
+            {
+                FirstName      = dto.FirstName,
+                LastName       = dto.LastName,
+                DocumentNumber = dto.DocumentNumber,
+                Phone          = dto.Phone,
+                Email          = dto.Email,
+                Address        = string.Empty,
+                IsActive       = true,
+            };
+            _db.Customers.Add(customer);
+            await _db.SaveChangesAsync();
+        }
+        else
+        {
+            customer = existingCustomer;
+        }
+
         _ = _email.SendWelcomeAsync(user.Email!, $"{user.FirstName} {user.LastName}");
 
         var (token, expiresAt) = _jwt.GenerateToken(user, ["Cliente"]);
         return CreatedAtAction(nameof(Login), new TokenResponseDto
         {
-            Token    = token,
-            ExpiresAt = expiresAt,
-            Email    = user.Email!,
-            FullName = $"{user.FirstName} {user.LastName}",
-            Roles    = ["Cliente"],
+            Token      = token,
+            ExpiresAt  = expiresAt,
+            Email      = user.Email!,
+            FullName   = $"{user.FirstName} {user.LastName}",
+            Roles      = ["Cliente"],
+            CustomerId = customer.Id,
         });
     }
 }
