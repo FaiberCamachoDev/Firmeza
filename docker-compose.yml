@@ -1,26 +1,31 @@
+# Orden de arranque:
+#   tests → db → api + admin → client
+#
+# Si "tests" falla (exit code != 0), Docker Compose aborta
+# el despliegue y ningún otro servicio se levanta.
+#
+# Uso:
+#   docker compose up --build          # levantar todo
+#   docker compose up --build tests    # solo correr pruebas
+
 services:
-  web:
+
+  # ── 1. Pruebas automatizadas ─────────────────────────────────────────────
+  tests:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: firmeza_web
-    ports:
-      - "8080:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
+      dockerfile: Dockerfile.tests
+    container_name: firmeza_tests
+    restart: "no"
 
+  # ── 2. Base de datos ──────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
     container_name: firmeza_db
     environment:
-      POSTGRES_DB: firmeza_db
-      POSTGRES_USER: firmeza_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       firmeza_db
+      POSTGRES_USER:     firmeza_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Firmeza2024!}
     ports:
       - "5433:5432"
     volumes:
@@ -31,6 +36,76 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    depends_on:
+      tests:
+        condition: service_completed_successfully
+
+  # ── 3. API REST (JWT) ────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./Firmeza
+      dockerfile: Firmeza.Api/Dockerfile
+    container_name: firmeza_api
+    ports:
+      - "5109:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=firmeza_db;
+        Username=firmeza_user;Password=${POSTGRES_PASSWORD:-Firmeza2024!}
+      Jwt__Key:          ${JWT_KEY:-firmeza-super-secret-key-min-32-chars-2026}
+      Jwt__Issuer:       Firmeza.Api
+      Jwt__Audience:     Firmeza.Clients
+      Jwt__ExpireHours:  "8"
+      Email__SmtpHost:   ${EMAIL_SMTP_HOST:-smtp.gmail.com}
+      Email__SmtpPort:   ${EMAIL_SMTP_PORT:-587}
+      Email__Username:   ${EMAIL_USERNAME:-}
+      Email__Password:   ${EMAIL_PASSWORD:-}
+      Email__FromName:   Firmeza
+      Email__FromAddress: ${EMAIL_FROM:-}
+    restart: unless-stopped
+    depends_on:
+      tests:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+  # ── 4. Panel de administración (Razor Pages) ─────────────────────────────
+  admin:
+    build:
+      context: ./Firmeza
+      dockerfile: Firmeza.Web/Dockerfile
+    container_name: firmeza_admin
+    ports:
+      - "5006:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=firmeza_db;
+        Username=firmeza_user;Password=${POSTGRES_PASSWORD:-Firmeza2024!}
+    restart: unless-stopped
+    depends_on:
+      tests:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+  # ── 5. Portal del cliente (React + nginx) ────────────────────────────────
+  client:
+    build:
+      context: ./Firmeza
+      dockerfile: Firmeza.Client/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5109
+    container_name: firmeza_client
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    depends_on:
+      tests:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
 
 volumes:
   postgres_data:

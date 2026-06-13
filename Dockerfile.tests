@@ -1,0 +1,23 @@
+# Ejecuta todas las pruebas xUnit de Firmeza.Tests
+# Si alguna prueba falla, el contenedor termina con exit code != 0
+# y docker compose detiene el despliegue completo.
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS test
+
+WORKDIR /src
+
+# Copiar archivos de proyecto primero para aprovechar cache de capas
+COPY Firmeza/Firmeza.slnx                          .
+COPY Firmeza/Firmeza.Web/Firmeza.Web.csproj        Firmeza.Web/
+COPY Firmeza/Firmeza.Api/Firmeza.Api.csproj        Firmeza.Api/
+COPY Firmeza/Firmeza.Tests/Firmeza.Tests.csproj    Firmeza.Tests/
+
+RUN dotnet restore Firmeza.Tests/Firmeza.Tests.csproj
+
+# Copiar el código fuente completo
+COPY Firmeza/ .
+
+RUN dotnet test Firmeza.Tests/Firmeza.Tests.csproj \
+    --no-restore \
+    -c Release \
+    --logger "console;verbosity=normal"

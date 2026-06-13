@@ -52,13 +52,24 @@
                 Clientes
             </a>
 
-            <a href="#"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed opacity-60">
+            <a asp-page="/Admin/Sales/Index"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                      @(currentPage.StartsWith("/Admin/Sales") ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white")">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 20h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                Ventas <span class="ml-auto text-xs text-gray-500">Próximo</span>
+                Ventas
+            </a>
+
+            <a asp-page="/Admin/Import/Index"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                      @(currentPage.StartsWith("/Admin/Import") ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white")">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Importar Excel
             </a>
         </nav>
 
