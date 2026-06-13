@@ -3,6 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 
+const IDENTITY_ERRORS: Record<string, string> = {
+  'Passwords must have at least one non alphanumeric character.':
+    'La contraseña debe tener al menos un carácter especial (ej: ! @ # $ %).',
+  'Passwords must have at least one digit': 'La contraseña debe tener al menos un número.',
+  'Passwords must have at least one uppercase': 'La contraseña debe tener al menos una mayúscula.',
+  'Passwords must be at least': 'La contraseña debe tener al menos 8 caracteres.',
+};
+
+function translateError(msg: string): string {
+  for (const [key, val] of Object.entries(IDENTITY_ERRORS)) {
+    if (msg.includes(key)) return val;
+  }
+  return msg;
+}
+
 export default function RegisterPage() {
   const { saveAuth } = useAuth();
   const navigate = useNavigate();
@@ -29,8 +44,8 @@ export default function RegisterPage() {
       navigate('/catalog');
     } catch (err: unknown) {
       const res = (err as { response?: { data?: { message?: string; errors?: string[] } } })?.response?.data;
-      if (res?.errors) setErrors(res.errors);
-      else setErrors([res?.message ?? 'Error al registrarse.']);
+      if (res?.errors) setErrors(res.errors.map(translateError));
+      else setErrors([translateError(res?.message ?? 'Error al registrarse.')]);
     } finally {
       setLoading(false);
     }
@@ -70,7 +85,22 @@ export default function RegisterPage() {
             {field('Apellido', 'lastName', 'text', 'Pérez')}
           </div>
           {field('Correo electrónico', 'email', 'email', 'tu@correo.com')}
-          {field('Contraseña', 'password', 'password', 'Mín. 8 caracteres, mayúscula y símbolo')}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+            <input
+              type="password"
+              required
+              value={form.password}
+              onChange={(e) => set('password', e.target.value)}
+              placeholder="Ej: MiClave2024!"
+              className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="text-xs text-slate-400 mt-1.5">
+              Mínimo 8 caracteres · una mayúscula · un número · un símbolo (<span className="font-mono">! @ # $ %</span>)
+            </p>
+          </div>
+
           {field('Número de documento', 'documentNumber', 'text', 'CC / RUC / Pasaporte')}
           {field('Teléfono', 'phone', 'tel', '0999-000-000')}
 
