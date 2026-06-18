@@ -26,4 +26,8 @@ ENV ASPNETCORE_URLS=http://+:8080
 
 COPY --from=build /app/publish .
 
+# L5: ejecutar como usuario no-root
+RUN adduser --disabled-password --no-create-home --gecos "" appuser
+USER appuser
+
 ENTRYPOINT ["dotnet", "Firmeza.Api.dll"]

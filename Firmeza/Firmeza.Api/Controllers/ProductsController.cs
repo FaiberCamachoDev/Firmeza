@@ -28,7 +28,7 @@ public class ProductsController : ControllerBase
         [FromQuery] string? category,
         [FromQuery] bool? active)
     {
-        var query = _db.Products.AsQueryable();
+        var query = _db.Products.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -52,7 +52,7 @@ public class ProductsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ProductDto>> GetById(int id)
     {
-        var product = await _db.Products.FindAsync(id);
+        var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
         if (product is null) return NotFound();
         return Ok(_mapper.Map<ProductDto>(product));
     }
@@ -61,7 +61,7 @@ public class ProductsController : ControllerBase
     [HttpGet("categories")]
     public async Task<ActionResult<IEnumerable<string>>> GetCategories()
     {
-        var cats = await _db.Products
+        var cats = await _db.Products.AsNoTracking()
             .Where(p => !string.IsNullOrEmpty(p.Category))
             .Select(p => p.Category)
             .Distinct()

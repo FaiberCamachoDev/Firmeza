@@ -1,5 +1,5 @@
 export interface TokenResponse {
-  token: string;
+  token: string; // solo para Swagger / clientes no-browser; el SPA usa la cookie
   expiresAt: string;
   email: string;
   fullName: string;
@@ -7,8 +7,8 @@ export interface TokenResponse {
   customerId: number | null;
 }
 
+// H5: AuthUser no almacena el token — el SPA lo obtiene vía cookie httpOnly
 export interface AuthUser {
-  token: string;
   expiresAt: string;
   email: string;
   fullName: string;

@@ -17,8 +17,9 @@ public class JwtService
 
     public (string token, DateTime expiresAt) GenerateToken(ApplicationUser user, IEnumerable<string> roles)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var rawKey = _config["Jwt:Key"]
+            ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(rawKey));
 
         var expireHours = int.Parse(_config["Jwt:ExpireHours"] ?? "8");
         var expiresAt = DateTime.UtcNow.AddHours(expireHours);

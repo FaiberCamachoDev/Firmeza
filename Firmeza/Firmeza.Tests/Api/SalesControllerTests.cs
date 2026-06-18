@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using Firmeza.Api.Controllers;
 using Firmeza.Api.DTOs.Sales;
@@ -5,9 +6,11 @@ using Firmeza.Api.Mappings;
 using Firmeza.Api.Services;
 using Firmeza.Web.Data;
 using Firmeza.Web.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Firmeza.Tests.Api;
 
@@ -38,7 +41,21 @@ public class SalesControllerTests : IDisposable
             .BuildServiceProvider()
             .GetRequiredService<IMapper>();
 
-        _controller = new SalesController(_db, _mapper, new NoOpEmailService());
+        _controller = new SalesController(_db, _mapper, new NoOpEmailService(), NullLogger<SalesController>.Instance)
+        {
+            // Simula un usuario Admin para que los checks de ownership/rol se salten en tests
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.Role,  "Admin"),
+                        new Claim(ClaimTypes.Email, "admin@test.com"),
+                    ], "Test"))
+                }
+            }
+        };
     }
 
     public void Dispose() => _db.Dispose();

@@ -19,19 +19,25 @@ public static class DbSeeder
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
+        // H1: contraseña leída desde variable de entorno para no comprometer el repositorio
+        var adminPassword = Environment.GetEnvironmentVariable("FIRMEZA_ADMIN_PASSWORD")
+            ?? throw new InvalidOperationException(
+                "FIRMEZA_ADMIN_PASSWORD environment variable is not set. " +
+                "Set it before starting the application.");
+
         const string adminEmail = "admin@firmeza.com";
         if (await userManager.FindByEmailAsync(adminEmail) is null)
         {
             var admin = new ApplicationUser
             {
-                UserName = adminEmail,
-                Email = adminEmail,
-                FirstName = "Admin",
-                LastName = "Firmeza",
+                UserName       = adminEmail,
+                Email          = adminEmail,
+                FirstName      = "Admin",
+                LastName       = "Firmeza",
                 DocumentNumber = "00000000",
-                EmailConfirmed = true
+                EmailConfirmed = true,
             };
-            var result = await userManager.CreateAsync(admin, "Admin@123!");
+            var result = await userManager.CreateAsync(admin, adminPassword);
             if (result.Succeeded)
                 await userManager.AddToRoleAsync(admin, "Admin");
         }

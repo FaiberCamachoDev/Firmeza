@@ -3,10 +3,12 @@ using Firmeza.Api.DTOs.Auth;
 using Firmeza.Api.Services;
 using Firmeza.Web.Data;
 using Firmeza.Web.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Firmeza.Tests.Api;
@@ -68,6 +70,19 @@ public class AuthControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
+    // Helper: crea el controller con HttpContext para que Response.Cookies funcione
+    private AuthController BuildController(
+        Mock<UserManager<ApplicationUser>> um,
+        IEmailService? email = null) =>
+        new AuthController(um.Object, BuildJwtService(), email ?? BuildEmailMock().Object, _db,
+            NullLogger<AuthController>.Instance)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
+
     // -----------------------------------------------------------------------
     // Login
     // -----------------------------------------------------------------------
@@ -81,7 +96,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.CheckPasswordAsync(user, "Pass123!")).ReturnsAsync(true);
         um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["Cliente"]);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var result = await controller.Login(new LoginDto { Email = user.Email!, Password = "Pass123!" });
 
@@ -99,7 +114,7 @@ public class AuthControllerTests : IDisposable
         var um = BuildUserManagerMock();
         um.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((ApplicationUser?)null);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var result = await controller.Login(new LoginDto { Email = "ghost@firmeza.com", Password = "any" });
 
@@ -114,7 +129,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
         um.Setup(m => m.CheckPasswordAsync(user, It.IsAny<string>())).ReturnsAsync(false);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var result = await controller.Login(new LoginDto { Email = user.Email!, Password = "wrong" });
 
@@ -139,7 +154,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.CheckPasswordAsync(user, "Pass123!")).ReturnsAsync(true);
         um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["Cliente"]);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var result = await controller.Login(new LoginDto { Email = "linked@firmeza.com", Password = "Pass123!" });
 
@@ -164,7 +179,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Cliente"))
           .ReturnsAsync(IdentityResult.Success);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), email.Object, _db);
+        var controller = BuildController(um, email.Object);
 
         var dto = new RegisterDto
         {
@@ -195,7 +210,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Cliente"))
           .ReturnsAsync(IdentityResult.Success);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var dto = new RegisterDto
         {
@@ -224,7 +239,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Cliente"))
           .ReturnsAsync(IdentityResult.Success);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var dto = new RegisterDto
         {
@@ -244,11 +259,13 @@ public class AuthControllerTests : IDisposable
     [Fact]
     public async Task Register_EmailAlreadyTaken_Returns409()
     {
-        var existing = MakeUser("dup@firmeza.com");
-        var um       = BuildUserManagerMock();
-        um.Setup(m => m.FindByEmailAsync("dup@firmeza.com")).ReturnsAsync(existing);
+        // H7: el check de duplicado ahora lo devuelve CreateAsync (sin TOCTOU)
+        var um = BuildUserManagerMock();
+        um.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
+          .ReturnsAsync(IdentityResult.Failed(
+              new IdentityError { Code = "DuplicateUserName", Description = "El correo ya está registrado." }));
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var result = await controller.Register(new RegisterDto
         {
@@ -271,7 +288,7 @@ public class AuthControllerTests : IDisposable
         um.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
           .ReturnsAsync(identityFailure);
 
-        var controller = new AuthController(um.Object, BuildJwtService(), BuildEmailMock().Object, _db);
+        var controller = BuildController(um);
 
         var result = await controller.Register(new RegisterDto
         {

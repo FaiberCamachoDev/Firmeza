@@ -42,13 +42,35 @@ public class CreateModel : PageModel
             return Page();
         }
 
+        // M3: agregar cantidades de items duplicados
+        var aggregated = Input.Items!
+            .GroupBy(i => i.ProductId)
+            .Select(g => new { ProductId = g.Key, Quantity = g.Sum(i => i.Quantity) })
+            .ToList();
+
+        var productIds = aggregated.Select(i => i.ProductId).ToList();
         var products = await _db.Products
-            .Where(p => Input.Items!.Select(i => i.ProductId).Contains(p.Id))
+            .Where(p => productIds.Contains(p.Id) && p.IsActive)
             .ToListAsync();
 
-        var details = Input.Items!.Select(item =>
+        // M8: validación de stock — mismo comportamiento que el API
+        var insufficientStock = aggregated
+            .Where(item => products.First(p => p.Id == item.ProductId).Stock < item.Quantity)
+            .Select(item => products.First(p => p.Id == item.ProductId).Name)
+            .ToList();
+
+        if (insufficientStock.Count > 0)
+        {
+            ModelState.AddModelError(string.Empty,
+                $"Stock insuficiente para: {string.Join(", ", insufficientStock)}.");
+            await LoadSelectsAsync();
+            return Page();
+        }
+
+        var details = aggregated.Select(item =>
         {
             var product = products.First(p => p.Id == item.ProductId);
+            product.Stock -= item.Quantity;
             return new SaleDetail
             {
                 ProductId = item.ProductId,

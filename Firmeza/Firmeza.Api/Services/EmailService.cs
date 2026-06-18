@@ -46,7 +46,12 @@ public class EmailService : IEmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
 
-        _logger.LogInformation("Email enviado a {To}: {Subject}", toAddress, subject);
+        // M9: enmascarar email en logs para no exponer PII
+        var atIdx = toAddress.IndexOf('@');
+        var masked = atIdx > 1
+            ? $"{toAddress[..2]}***{toAddress[(atIdx - 1)..]}"
+            : "***";
+        _logger.LogInformation("Email enviado a {To}: {Subject}", masked, subject);
     }
 
     public Task SendPurchaseConfirmationAsync(string toEmail, string customerName, int saleId, decimal total) =>
@@ -61,23 +66,32 @@ public class EmailService : IEmailService
             "Bienvenido a Firmeza",
             BuildWelcomeHtml(customerName));
 
-    private static string BuildPurchaseHtml(string name, int saleId, decimal total) => $"""
-        <html><body style="font-family:Arial,sans-serif;color:#333;">
-          <h2 style="color:#4F46E5;">Firmeza — Confirmación de Compra</h2>
-          <p>Hola <strong>{name}</strong>,</p>
-          <p>Tu compra <strong>#{saleId:D6}</strong> ha sido registrada exitosamente.</p>
-          <p>Total: <strong>${total:N2}</strong></p>
-          <p>Gracias por confiar en Firmeza.</p>
-          <hr/><p style="font-size:12px;color:#999;">Firmeza — Sistema Administrativo</p>
-        </body></html>
-        """;
+    // L7: HtmlEncode para evitar inyección HTML en correos si el nombre contiene caracteres especiales
+    private static string BuildPurchaseHtml(string name, int saleId, decimal total)
+    {
+        var safeName = System.Net.WebUtility.HtmlEncode(name);
+        return $"""
+            <html><body style="font-family:Arial,sans-serif;color:#333;">
+              <h2 style="color:#4F46E5;">Firmeza — Confirmación de Compra</h2>
+              <p>Hola <strong>{safeName}</strong>,</p>
+              <p>Tu compra <strong>#{saleId:D6}</strong> ha sido registrada exitosamente.</p>
+              <p>Total: <strong>${total:N2}</strong></p>
+              <p>Gracias por confiar en Firmeza.</p>
+              <hr/><p style="font-size:12px;color:#999;">Firmeza — Sistema Administrativo</p>
+            </body></html>
+            """;
+    }
 
-    private static string BuildWelcomeHtml(string name) => $"""
-        <html><body style="font-family:Arial,sans-serif;color:#333;">
-          <h2 style="color:#4F46E5;">¡Bienvenido a Firmeza!</h2>
-          <p>Hola <strong>{name}</strong>,</p>
-          <p>Tu cuenta de cliente ha sido creada. Ya puedes acceder al portal.</p>
-          <hr/><p style="font-size:12px;color:#999;">Firmeza — Sistema Administrativo</p>
-        </body></html>
-        """;
+    private static string BuildWelcomeHtml(string name)
+    {
+        var safeName = System.Net.WebUtility.HtmlEncode(name);
+        return $"""
+            <html><body style="font-family:Arial,sans-serif;color:#333;">
+              <h2 style="color:#4F46E5;">¡Bienvenido a Firmeza!</h2>
+              <p>Hola <strong>{safeName}</strong>,</p>
+              <p>Tu cuenta de cliente ha sido creada. Ya puedes acceder al portal.</p>
+              <hr/><p style="font-size:12px;color:#999;">Firmeza — Sistema Administrativo</p>
+            </body></html>
+            """;
+    }
 }

@@ -19,6 +19,7 @@ public class Product
     [Column(TypeName = "numeric(18,2)")]
     public decimal Price { get; set; }
 
+    [ConcurrencyCheck]
     public int Stock { get; set; }
 
     [MaxLength(100)]

@@ -29,7 +29,7 @@ public class CustomersController : ControllerBase
         [FromQuery] string? search,
         [FromQuery] bool? active)
     {
-        var query = _db.Customers.AsQueryable();
+        var query = _db.Customers.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -52,7 +52,7 @@ public class CustomersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CustomerDto>> GetById(int id)
     {
-        var customer = await _db.Customers.FindAsync(id);
+        var customer = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
         if (customer is null) return NotFound();
         return Ok(_mapper.Map<CustomerDto>(customer));
     }
