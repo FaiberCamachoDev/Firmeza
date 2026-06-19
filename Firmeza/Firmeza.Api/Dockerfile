@@ -22,7 +22,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
 EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
 
 COPY --from=build /app/publish .
 
@@ -30,4 +29,5 @@ COPY --from=build /app/publish .
 RUN adduser --disabled-password --no-create-home --gecos "" appuser
 USER appuser
 
-ENTRYPOINT ["dotnet", "Firmeza.Api.dll"]
+# Railway inyecta $PORT en tiempo de ejecución; fallback 8080 para local/Docker
+ENTRYPOINT ["sh", "-c", "exec dotnet Firmeza.Api.dll --urls \"http://+:${PORT:-8080}\""]

@@ -16,8 +16,12 @@ RUN npm run build
 # ── Stage 2: Servir con nginx ─────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runtime
 
+# Railway inyecta $PORT; fallback 80 para local/Docker
+ENV PORT=80
+
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY Firmeza.Client/nginx.conf /etc/nginx/conf.d/default.conf
+# nginx:1.19+ procesa automáticamente los *.template con envsubst al arrancar
+COPY Firmeza.Client/nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 
