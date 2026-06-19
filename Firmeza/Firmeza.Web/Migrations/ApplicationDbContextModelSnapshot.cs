@@ -155,7 +155,7 @@ namespace Firmeza.Web.Migrations
 
                     b.HasIndex("Email");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("Firmeza.Web.Models.Product", b =>
@@ -207,7 +207,7 @@ namespace Firmeza.Web.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("Firmeza.Web.Models.Sale", b =>
@@ -241,7 +241,7 @@ namespace Firmeza.Web.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Sales");
+                    b.ToTable("Sales", (string)null);
                 });
 
             modelBuilder.Entity("Firmeza.Web.Models.SaleDetail", b =>
@@ -270,7 +270,7 @@ namespace Firmeza.Web.Migrations
 
                     b.HasIndex("SaleId");
 
-                    b.ToTable("SaleDetails");
+                    b.ToTable("SaleDetails", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
